@@ -56,9 +56,7 @@ __host__ __device__ void scatterRay(
     // Offset along the normal
     pathSegment.ray.origin = intersect + normal * 0.0001f;
     pathSegment.ray.direction = glm::normalize(newDir);
-
     pathSegment.color *= m.color;
-    
     pathSegment.remainingBounces--;
 }
 
@@ -73,8 +71,66 @@ __host__ __device__ void scatterMirror(
 
     pathSegment.ray.origin = intersect + normal * 0.0001f;
     pathSegment.ray.direction = reflectedDir;
-
     pathSegment.color *= m.color;
+    pathSegment.remainingBounces--;
+}
 
+__host__ __device__ float schlickFresnel(float cosTheta, float etaI, float etaT)
+{
+    float r0 = (etaI - etaT) / (etaI + etaT);
+    r0 *= r0;
+
+    float oneMinusCos = 1.0f - cosTheta;
+    float oneMinusCos2 = oneMinusCos * oneMinusCos;
+    float oneMinusCos5 = oneMinusCos2 * oneMinusCos2 * oneMinusCos;
+
+    return r0 + (1.0f - r0) * oneMinusCos5;
+}
+
+__host__ __device__ void scatterDielectric(
+    PathSegment& pathSegment,
+    glm::vec3 intersect,
+    glm::vec3 normal,
+    bool outside,
+    const Material& m,
+    thrust::default_random_engine& rng)
+{
+    glm::vec3 incident = glm::normalize(pathSegment.ray.direction);
+
+    glm::vec3 faceNormal = glm::normalize(normal);
+    if (glm::dot(incident, faceNormal) > 0.0f)
+    {
+        faceNormal = -faceNormal;
+    }
+
+    float ior = m.indexOfRefraction;
+    float etaI = outside ? 1.0f : ior;
+    float etaT = outside ? ior : 1.0f;
+    float eta = etaI / etaT;
+
+    float cosTheta = glm::clamp(glm::dot(-incident, faceNormal), 0.0f, 1.0f);
+    float sinThetaSquared = glm::max(0.0f, 1.0f - cosTheta * cosTheta);
+
+    bool totalInternalReflection = eta * eta * sinThetaSquared > 1.0f;
+    float reflectProbability = schlickFresnel(cosTheta, etaI, etaT);
+    thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
+    bool chooseReflection = totalInternalReflection || u01(rng) < reflectProbability;
+
+    glm::vec3 outgoing;
+    if (chooseReflection)
+    {
+        outgoing = glm::reflect(incident, faceNormal);
+    }
+    else
+    {
+        outgoing = glm::refract(incident, faceNormal, eta);
+    }
+    outgoing = glm::normalize(outgoing);
+
+    float offsetSign = glm::dot(outgoing, faceNormal) > 0.0f ? 1.0f : -1.0f;
+
+    pathSegment.ray.origin = intersect + offsetSign * 0.0001f * faceNormal;
+    pathSegment.ray.direction = outgoing;
+    pathSegment.color *= m.color;
     pathSegment.remainingBounces--;
 }

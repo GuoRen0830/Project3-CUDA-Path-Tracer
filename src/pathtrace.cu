@@ -378,10 +378,7 @@ __global__ void computeIntersections(
     glm::vec3 normal;
     float t_min = FLT_MAX;
     int hit_geom_index = -1;
-    bool outside = true;
-
-    glm::vec3 tmp_intersect;
-    glm::vec3 tmp_normal;
+    bool hitOutside = true;
 
     // naive parse through global geoms
 
@@ -389,13 +386,20 @@ __global__ void computeIntersections(
     {
         Geom& geom = geoms[i];
 
+        t = -1.0f;
+
+        glm::vec3 tmp_intersect;
+        glm::vec3 tmp_normal;
+
+        bool tmp_outside = true;
+
         if (geom.type == CUBE)
         {
-            t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside);
+            t = boxIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, tmp_outside);
         }
         else if (geom.type == SPHERE)
         {
-            t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, outside);
+            t = sphereIntersectionTest(geom, pathSegment.ray, tmp_intersect, tmp_normal, tmp_outside);
         }
         // TODO: add more intersection tests here... triangle? metaball? CSG?
 
@@ -405,8 +409,9 @@ __global__ void computeIntersections(
         {
             t_min = t;
             hit_geom_index = i;
-            intersect_point = tmp_intersect;
+
             normal = tmp_normal;
+            hitOutside = tmp_outside;
         }
     }
 
@@ -420,6 +425,7 @@ __global__ void computeIntersections(
         intersections[path_index].t = t_min;
         intersections[path_index].materialId = geoms[hit_geom_index].materialid;
         intersections[path_index].surfaceNormal = normal;
+        intersections[path_index].outside = hitOutside;
     }
 }
 
@@ -537,6 +543,10 @@ __global__ void shadeDiffuseMaterial(
 
     case MATERIAL_MIRROR:
         scatterMirror(path, intersectionPoint, intersection.surfaceNormal, material);
+        break;
+
+    case MATERIAL_DIELECTRIC:
+        scatterDielectric(path, intersectionPoint, intersection.surfaceNormal, intersection.outside, material, rng);
         break;
 
     default:

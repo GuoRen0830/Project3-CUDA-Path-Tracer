@@ -52,3 +52,11 @@ __host__ __device__ void scatterMirror(
     glm::vec3 intersect,
     glm::vec3 normal,
     const Material& m);
+
+__host__ __device__ void scatterDielectric(
+    PathSegment& pathSegment,
+    glm::vec3 intersect,
+    glm::vec3 normal,
+    bool outside,
+    const Material& m,
+    thrust::default_random_engine& rng);
