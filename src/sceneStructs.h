@@ -33,8 +33,18 @@ struct Geom
     glm::mat4 invTranspose;
 };
 
+enum MaterialType
+{
+    MATERIAL_DIFFUSE = 0,
+    MATERIAL_SPECULAR = 1,
+    MATERIAL_EMITTING = 2,
+    MATERIAL_TYPE_COUNT = 3
+};
+
 struct Material
 {
+    MaterialType type;
+
     glm::vec3 color;
     struct
     {

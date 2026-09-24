@@ -139,3 +139,13 @@ std::istream& utilityCore::safeGetline(std::istream& is, std::string& t)
         }
     }
 }
+
+int utilityCore::nexPowerOfTwo(int n)
+{
+    int result = 1;
+    while (result < n)
+    {
+        result <<= 1;
+    }
+    return result;
+}
