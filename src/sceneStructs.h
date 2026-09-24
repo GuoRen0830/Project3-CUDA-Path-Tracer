@@ -36,9 +36,10 @@ struct Geom
 enum MaterialType
 {
     MATERIAL_DIFFUSE = 0,
-    MATERIAL_SPECULAR = 1,
-    MATERIAL_EMITTING = 2,
-    MATERIAL_TYPE_COUNT = 3
+    MATERIAL_MIRROR = 1,
+    MATERIAL_DIELECTRIC = 2,
+    MATERIAL_EMITTING = 3,
+    MATERIAL_TYPE_COUNT = 4
 };
 
 struct Material
@@ -46,11 +47,13 @@ struct Material
     MaterialType type;
 
     glm::vec3 color;
+
     struct
     {
         float exponent;
         glm::vec3 color;
     } specular;
+
     float hasReflective;
     float hasRefractive;
     float indexOfRefraction;
@@ -94,4 +97,5 @@ struct ShadeableIntersection
   float t;
   glm::vec3 surfaceNormal;
   int materialId;
+  bool outside;
 };

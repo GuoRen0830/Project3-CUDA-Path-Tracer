@@ -61,3 +61,20 @@ __host__ __device__ void scatterRay(
     
     pathSegment.remainingBounces--;
 }
+
+__host__ __device__ void scatterMirror(
+    PathSegment& pathSegment,
+    glm::vec3 intersect,
+    glm::vec3 normal,
+    const Material& m)
+{
+    glm::vec3 incident = glm::normalize(pathSegment.ray.direction);
+    glm::vec3 reflectedDir = glm::normalize(glm::reflect(incident, normal));
+
+    pathSegment.ray.origin = intersect + normal * 0.0001f;
+    pathSegment.ray.direction = reflectedDir;
+
+    pathSegment.color *= m.color;
+
+    pathSegment.remainingBounces--;
+}

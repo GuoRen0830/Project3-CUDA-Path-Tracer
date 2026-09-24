@@ -528,7 +528,22 @@ __global__ void shadeDiffuseMaterial(
 
     glm::vec3 intersectionPoint = path.ray.origin + intersection.t * glm::normalize(path.ray.direction);
 
-    scatterRay(path, intersectionPoint, intersection.surfaceNormal, material, rng);
+    // Scatter
+    switch (material.type)
+    {
+    case MATERIAL_DIFFUSE:
+        scatterRay(path, intersectionPoint, intersection.surfaceNormal, material, rng);
+        break;
+
+    case MATERIAL_MIRROR:
+        scatterMirror(path, intersectionPoint, intersection.surfaceNormal, material);
+        break;
+
+    default:
+        path.color = glm::vec3(0.0f);
+        path.remainingBounces = 0;
+        break;
+    }
 }
 
 __global__ void gatherTerminatedPaths(int nPaths, glm::vec3* image, PathSegment* iterationPaths)

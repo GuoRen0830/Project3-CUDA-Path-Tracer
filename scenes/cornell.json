@@ -27,6 +27,15 @@
             "TYPE":"Specular",
             "RGB":[0.98, 0.98, 0.98],
             "ROUGHNESS":0.0
+        },
+        "mirror_white": {
+            "TYPE": "Mirror",
+            "RGB": [0.98, 0.98, 0.98]
+        },
+        "clear_glass": {
+            "TYPE": "Dielectric",
+            "RGB": [1.0, 1.0, 1.0],
+            "IOR": 1.5
         }
     },
     "Camera":
