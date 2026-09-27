@@ -95,7 +95,7 @@
         },
         {
             "TYPE":"sphere",
-            "MATERIAL":"clear_glass",
+            "MATERIAL":"mirror_white",
             "TRANS":[-1.0,4.0,-1.0],
             "ROTAT":[0.0,0.0,0.0],
             "SCALE":[3.0,3.0,3.0]

@@ -57,6 +57,7 @@ set(headers
     src/scene.h
     src/sceneStructs.h
     src/utilities.h
+    src/streamCompaction.h
 )
 
 set(sources
@@ -69,6 +70,7 @@ set(sources
     src/interactions.cu
     src/scene.cpp
     src/utilities.cpp
+    src/streamCompaction.cu
 )
 
 set(imgui_headers
@@ -111,6 +113,16 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     ${GL_LIBRARIES}
     #stream_compaction  # TODO: uncomment if using your stream compaction
 )
+
+# CUDA CCCL requires the conforming MSVC preprocessor.
+if(MSVC
+   AND CMAKE_CUDA_COMPILER_ID STREQUAL "NVIDIA"
+   AND MSVC_VERSION GREATER_EQUAL 1920)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
+        "$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=/Zc:preprocessor>"
+    )
+endif()
+
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES native)
 

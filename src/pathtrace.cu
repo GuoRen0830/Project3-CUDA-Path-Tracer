@@ -18,6 +18,7 @@
 #include "utilities.h"
 #include "intersections.h"
 #include "interactions.h"
+#include "streamCompaction.h"
 
 constexpr bool ENABLE_STREAM_COMPACTION = true;
 constexpr bool ENABLE_MATERIAL_SORTING = true;
@@ -88,134 +89,7 @@ static Geom* dev_geoms = NULL;
 static Material* dev_materials = NULL;
 static PathSegment* dev_paths = NULL;
 static ShadeableIntersection* dev_intersections = NULL;
-static PathSegment* dev_paths_cache = nullptr;  // Compacted paths
-static int* dev_path_alive = nullptr;
-static int* dev_path_scan = nullptr;
-static int path_scan_capacity = 0;
 static int* dev_material_keys = nullptr;
-
-__global__ void mapPathsToAlive(int n, int* alive, const PathSegment* paths)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (idx < n)
-    {
-        alive[idx] = paths[idx].remainingBounces > 0 ? 1 : 0;
-    }
-}
-
-__global__ void pathUpSweep(int n, int depth, int* data)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-    int stride = 1 << (depth + 1);
-    int right = (idx + 1) * stride - 1;
-
-    if (right < n)
-    {
-        int left = right - (stride >> 1);
-        data[right] += data[left];
-    }
-}
-
-__global__ void pathDownSweep(int n, int depth, int* data)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-    int stride = 1 << (depth + 1);
-    int right = (idx + 1) * stride - 1;
-
-    if (right < n)
-    {
-        int left = right - (stride >> 1);
-
-        int temp = data[left];
-        data[left] = data[right];
-        data[right] += temp;
-    }
-}
-
-__global__ void scatterAlivePaths(
-    int n,
-    PathSegment* outputPaths,
-    const PathSegment* inputPaths,
-    const int* alive,
-    const int* indices)
-{
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-
-    if (idx < n&& alive[idx] == 1)
-    {
-        outputPaths[indices[idx]] = inputPaths[idx];
-    }
-}
-
-int compactPaths(int numPaths)
-{
-    if (numPaths <= 0)
-    {
-        return 0;
-    }
-
-    const int blockSize = 128;
-    const int pathBlocks = (numPaths + blockSize - 1) / blockSize;
-    int paddedSize = utilityCore::nexPowerOfTwo(numPaths);
-
-    int scanDepth = 0;
-    for (int size = paddedSize; size > 1; size >>= 1)
-    {
-        scanDepth++;
-    }
-
-    // Map paths to 0/1
-    mapPathsToAlive << <pathBlocks, blockSize >> > (numPaths, dev_path_alive, dev_paths);
-
-    // Initialize the padded scan buffer
-    cudaMemset(dev_path_scan, 0, paddedSize * sizeof(int));
-
-    cudaMemcpy(dev_path_scan, dev_path_alive, numPaths * sizeof(int), cudaMemcpyDeviceToDevice);
-
-    // Up-sweep
-    for (int depth = 0; depth < scanDepth; ++depth)
-    {
-        int activeThreads = paddedSize >> (depth + 1);
-        int blocks = (activeThreads + blockSize - 1) / blockSize;
-        pathUpSweep << <blocks, blockSize >> > (paddedSize, depth, dev_path_scan);
-    }
-
-    // Down-sweep
-    cudaMemset(dev_path_scan + paddedSize - 1, 0, sizeof(int));
-
-    for (int depth = scanDepth - 1; depth >= 0; --depth)
-    {
-        int activeThreads = paddedSize >> (depth + 1);
-        int blocks = (activeThreads + blockSize - 1) / blockSize;
-        pathDownSweep << <blocks, blockSize >> > (paddedSize, depth, dev_path_scan);
-    }
-
-    // Scatter
-    scatterAlivePaths << <pathBlocks, blockSize >> > (
-        numPaths,
-        dev_paths_cache,
-        dev_paths,
-        dev_path_alive,
-        dev_path_scan);
-
-    // Number of active paths
-    int lastIndex = 0;
-    int lastAlive = 0;
-    cudaMemcpy(&lastIndex, dev_path_scan + numPaths - 1, sizeof(int), cudaMemcpyDeviceToHost);
-    cudaMemcpy(&lastAlive, dev_path_alive + numPaths - 1, sizeof(int), cudaMemcpyDeviceToHost);
-
-    int alivePathCount = lastIndex + lastAlive;
-
-    // Ping-pong
-    PathSegment* temp = dev_paths;
-    dev_paths = dev_paths_cache;
-    dev_paths_cache = temp;
-
-    return alivePathCount;
-}
 
 __global__ void buildMaterialSortKeys(
     int numPaths,
@@ -282,12 +156,12 @@ void pathtraceInit(Scene* scene)
     cudaMalloc(&dev_intersections, pixelcount * sizeof(ShadeableIntersection));
     cudaMemset(dev_intersections, 0, pixelcount * sizeof(ShadeableIntersection));
 
-    path_scan_capacity = utilityCore::nexPowerOfTwo(pixelcount);
-    cudaMalloc(&dev_paths_cache, pixelcount * sizeof(PathSegment));
-    cudaMalloc(&dev_path_alive, pixelcount * sizeof(int));
-    cudaMalloc(&dev_path_scan, path_scan_capacity * sizeof(int));
-
     cudaMalloc(&dev_material_keys, pixelcount * sizeof(int));
+
+    if (ENABLE_STREAM_COMPACTION)
+    {
+        streamCompaction::init(pixelcount);
+    }
 
     checkCUDAError("pathtraceInit");
 }
@@ -299,10 +173,9 @@ void pathtraceFree()
     cudaFree(dev_geoms);
     cudaFree(dev_materials);
     cudaFree(dev_intersections);
-    cudaFree(dev_paths_cache);
-    cudaFree(dev_path_alive);
-    cudaFree(dev_path_scan);
     cudaFree(dev_material_keys);
+
+    streamCompaction::free();
 
     checkCUDAError("pathtraceFree");
 }
@@ -483,7 +356,7 @@ __global__ void shadeFakeMaterial(
     }
 }
 
-__global__ void shadeDiffuseMaterial(
+__global__ void shadeMaterial(
     int iter,
     int num_paths,
     ShadeableIntersection* shadeableIntersections,
@@ -535,25 +408,7 @@ __global__ void shadeDiffuseMaterial(
     glm::vec3 intersectionPoint = path.ray.origin + intersection.t * glm::normalize(path.ray.direction);
 
     // Scatter
-    switch (material.type)
-    {
-    case MATERIAL_DIFFUSE:
-        scatterRay(path, intersectionPoint, intersection.surfaceNormal, material, rng);
-        break;
-
-    case MATERIAL_MIRROR:
-        scatterMirror(path, intersectionPoint, intersection.surfaceNormal, material);
-        break;
-
-    case MATERIAL_DIELECTRIC:
-        scatterDielectric(path, intersectionPoint, intersection.surfaceNormal, intersection.outside, material, rng);
-        break;
-
-    default:
-        path.color = glm::vec3(0.0f);
-        path.remainingBounces = 0;
-        break;
-    }
+    scatterRay(path, intersectionPoint, intersection.surfaceNormal, intersection.outside, material, rng);
 }
 
 __global__ void gatherTerminatedPaths(int nPaths, glm::vec3* image, PathSegment* iterationPaths)
@@ -665,7 +520,7 @@ void pathtrace(uchar4* pbo, int frame, int iter)
         }
 
         // Shading
-        shadeDiffuseMaterial << <numBlocksPaths, blockSize1d >> > (
+        shadeMaterial << <numBlocksPaths, blockSize1d >> > (
             iter,
             numPaths,
             dev_intersections,
@@ -683,7 +538,7 @@ void pathtrace(uchar4* pbo, int frame, int iter)
         // Compact
         if (ENABLE_STREAM_COMPACTION)
         {
-            numPaths = compactPaths(numPaths);
+            numPaths = streamCompaction::compact(dev_paths, numPaths);
             checkCUDAError("compact active paths");
         }
 

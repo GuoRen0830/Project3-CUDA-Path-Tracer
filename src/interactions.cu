@@ -2,6 +2,7 @@
 
 #include "utilities.h"
 
+#include <cmath>
 #include <thrust/random.h>
 
 __host__ __device__ glm::vec3 calculateRandomDirectionInHemisphere(
@@ -44,37 +45,6 @@ __host__ __device__ glm::vec3 calculateRandomDirectionInHemisphere(
         + sin(around) * over * perpendicularDirection2;
 }
 
-__host__ __device__ void scatterRay(
-    PathSegment & pathSegment,
-    glm::vec3 intersect,
-    glm::vec3 normal,
-    const Material &m,
-    thrust::default_random_engine &rng)
-{
-    glm::vec3 newDir = calculateRandomDirectionInHemisphere(normal, rng);
-
-    // Offset along the normal
-    pathSegment.ray.origin = intersect + normal * 0.0001f;
-    pathSegment.ray.direction = glm::normalize(newDir);
-    pathSegment.color *= m.color;
-    pathSegment.remainingBounces--;
-}
-
-__host__ __device__ void scatterMirror(
-    PathSegment& pathSegment,
-    glm::vec3 intersect,
-    glm::vec3 normal,
-    const Material& m)
-{
-    glm::vec3 incident = glm::normalize(pathSegment.ray.direction);
-    glm::vec3 reflectedDir = glm::normalize(glm::reflect(incident, normal));
-
-    pathSegment.ray.origin = intersect + normal * 0.0001f;
-    pathSegment.ray.direction = reflectedDir;
-    pathSegment.color *= m.color;
-    pathSegment.remainingBounces--;
-}
-
 __host__ __device__ float schlickFresnel(float cosTheta, float etaI, float etaT)
 {
     float r0 = (etaI - etaT) / (etaI + etaT);
@@ -87,47 +57,64 @@ __host__ __device__ float schlickFresnel(float cosTheta, float etaI, float etaT)
     return r0 + (1.0f - r0) * oneMinusCos5;
 }
 
-__host__ __device__ void scatterDielectric(
-    PathSegment& pathSegment,
+__host__ __device__ void scatterRay(
+    PathSegment & pathSegment,
     glm::vec3 intersect,
     glm::vec3 normal,
     bool outside,
-    const Material& m,
-    thrust::default_random_engine& rng)
+    const Material &m,
+    thrust::default_random_engine &rng)
 {
     glm::vec3 incident = glm::normalize(pathSegment.ray.direction);
-
     glm::vec3 faceNormal = glm::normalize(normal);
+
+    // Orient the normal against the incident direction
     if (glm::dot(incident, faceNormal) > 0.0f)
     {
         faceNormal = -faceNormal;
     }
 
-    float ior = m.indexOfRefraction;
-    float etaI = outside ? 1.0f : ior;
-    float etaT = outside ? ior : 1.0f;
-    float eta = etaI / etaT;
-
-    float cosTheta = glm::clamp(glm::dot(-incident, faceNormal), 0.0f, 1.0f);
-    float sinThetaSquared = glm::max(0.0f, 1.0f - cosTheta * cosTheta);
-
-    bool totalInternalReflection = eta * eta * sinThetaSquared > 1.0f;
-    float reflectProbability = schlickFresnel(cosTheta, etaI, etaT);
-    thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
-    bool chooseReflection = totalInternalReflection || u01(rng) < reflectProbability;
-
     glm::vec3 outgoing;
-    if (chooseReflection)
+
+    switch (m.type)
     {
+    case MATERIAL_DIFFUSE:
+        outgoing = calculateRandomDirectionInHemisphere(faceNormal, rng);
+        break;
+
+    case MATERIAL_MIRROR:
         outgoing = glm::reflect(incident, faceNormal);
-    }
-    else
+        break;
+
+    case MATERIAL_DIELECTRIC:
     {
-        outgoing = glm::refract(incident, faceNormal, eta);
+        float etaI = outside ? 1.0f : m.indexOfRefraction;
+        float etaT = outside ? m.indexOfRefraction : 1.0f;
+        float eta = etaI / etaT;
+
+        float cosTheta = glm::clamp(glm::dot(-incident, faceNormal), 0.0f, 1.0f);
+        float sinThetaSquared = glm::max(0.0f, 1.0f - cosTheta * cosTheta);
+
+        bool totalInternalReflection = eta * eta * sinThetaSquared > 1.0f;
+
+        float reflectProbability = schlickFresnel(cosTheta, etaI, etaT);
+
+        thrust::uniform_real_distribution<float> u01(0.0f, 1.0f);
+        bool chooseReflection = totalInternalReflection || u01(rng) < reflectProbability;
+
+        outgoing = chooseReflection ? glm::reflect(incident, faceNormal) : glm::refract(incident, faceNormal, eta);
+        break;
     }
+
+    default:
+        pathSegment.color = glm::vec3(0.0f);
+        pathSegment.remainingBounces = 0;
+        return;
+    }
+
     outgoing = glm::normalize(outgoing);
 
-    float offsetSign = glm::dot(outgoing, faceNormal) > 0.0f ? 1.0f : -1.0f;
+    float offsetSign = glm::dot(outgoing, faceNormal) >= 0.0f ? 1.0f : -1.0f;
 
     pathSegment.ray.origin = intersect + offsetSign * 0.0001f * faceNormal;
     pathSegment.ray.direction = outgoing;
