@@ -5,7 +5,7 @@
         {
             "TYPE": "Emitting",
             "RGB": [1.0, 1.0, 1.0],
-            "EMITTANCE": 40.0
+            "EMITTANCE": 30.0
         },
         "matte_white":
         {
@@ -24,9 +24,9 @@
         },
         "chrome_mirror":
         {
-        "TYPE": "Microfacet",
-        "RGB": [0.95, 0.95, 0.95],
-        "ROUGHNESS": 0.15
+            "TYPE": "Microfacet",
+            "RGB": [0.95, 0.95, 0.95],
+            "ROUGHNESS": 0.10
         }
     },
     "Camera":
@@ -92,11 +92,11 @@
             "SCALE": [3.0, 3.0, 3.0]
         },
         {
-            "TYPE": "cube",
+            "TYPE": "rectangle",
             "MATERIAL": "light",
             "TRANS": [0.0, 7.45, 0.0],
             "ROTAT": [90.0, 0.0, 0.0],
-            "SCALE": [3.0, 3.0, 0.01]
+            "SCALE": [3.0, 3.0, 1.0]
         }
     ]
 }

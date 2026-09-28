@@ -27,7 +27,20 @@ __host__ __device__ inline unsigned int utilhash(unsigned int a)
  */
 __host__ __device__ inline glm::vec3 getPointOnRay(Ray r, float t)
 {
-    return r.origin + (t - .0001f) * glm::normalize(r.direction);
+    return r.origin + t * glm::normalize(r.direction);
+}
+
+/**
+ * Advances a ray slightly along its direction to avoid self-intersection
+ */
+__host__ __device__ inline Ray spawnRay(
+    const glm::vec3& position,
+    const glm::vec3& direction)
+{
+    Ray ray;
+    ray.origin = position + direction * 0.0001f;
+    ray.direction = direction;
+    return ray;
 }
 
 /**
@@ -70,4 +83,26 @@ __host__ __device__ float sphereIntersectionTest(
     Ray r,
     glm::vec3& intersectionPoint,
     glm::vec3& normal,
+    bool& outside);
+
+/**
+ * Tests a one-sided rectangle in the local XY plane
+ */
+__host__ __device__ float rectangleIntersectionTest(
+    const Geom& rectangle,
+    Ray ray,
+    glm::vec3& intersectionPoint,
+    glm::vec3& normal,
+    bool& outside);
+
+/**
+ * Find the closest scene intersection
+ */
+__host__ __device__ float sceneIntersectionTest(
+    const Geom* geoms,
+    int geomsSize,
+    Ray r,
+    glm::vec3& intersectionPoint,
+    glm::vec3& normal,
+    int& geomId,
     bool& outside);

@@ -12,7 +12,8 @@
 enum GeomType
 {
     SPHERE,
-    CUBE
+    CUBE,
+    RECTANGLE
 };
 
 struct Ray
@@ -46,17 +47,8 @@ enum MaterialType
 struct Material
 {
     MaterialType type;
-
     glm::vec3 color;
 
-    struct
-    {
-        float exponent;
-        glm::vec3 color;
-    } specular;
-
-    float hasReflective;
-    float hasRefractive;
     float indexOfRefraction;
     float roughness;
     float emittance;
@@ -86,7 +78,14 @@ struct RenderState
 struct PathSegment
 {
     Ray ray;
-    glm::vec3 color;
+    glm::vec3 throughput;
+    glm::vec3 radiance;
+
+    glm::vec3 previousPosition;
+    float previousBsdfPdf;
+    bool previousBounceWasDelta;
+    bool previousLightSamplingEnabled;
+
     int pixelIndex;
     int remainingBounces;
 };
@@ -99,5 +98,25 @@ struct ShadeableIntersection
   float t;
   glm::vec3 surfaceNormal;
   int materialId;
+  int geomId;
   bool outside;
+};
+
+struct BSDFSample
+{
+    glm::vec3 direction;
+    glm::vec3 bsdfValue;
+    float pdf;
+    bool isDelta;
+    bool valid;
+};
+
+struct LightSample
+{
+    glm::vec3 directionToLight;
+    glm::vec3 emittedRadiance;
+
+    float pdf;
+    int geomId;
+    bool valid;
 };

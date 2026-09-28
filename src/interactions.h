@@ -6,15 +6,6 @@
 
 #include <thrust/random.h>
 
-struct BSDFSample
-{
-    glm::vec3 direction;
-    glm::vec3 f;
-    float pdf;
-    bool isSpecular;
-    bool valid;
-};
-
 __host__ __device__ glm::vec3 faceForwardNormal(glm::vec3 normal, glm::vec3 wo);
 __host__ __device__ float schlickFresnel(float cosTheta, float etaI, float etaT);
 __host__ __device__ BSDFSample invalidBSDFSample();

@@ -58,6 +58,7 @@ set(headers
     src/sceneStructs.h
     src/utilities.h
     src/streamCompaction.h
+    src/lighting.h
 )
 
 set(sources
@@ -71,6 +72,7 @@ set(sources
     src/scene.cpp
     src/utilities.cpp
     src/streamCompaction.cu
+    src/lighting.cu
 )
 
 set(imgui_headers

@@ -1,4 +1,6 @@
 #include "intersections.h"
+#include "utilities.h"
+#include <cfloat>
 
 __host__ __device__ float boxIntersectionTest(
     Geom box,
@@ -13,8 +15,8 @@ __host__ __device__ float boxIntersectionTest(
 
     float tmin = -1e38f;
     float tmax = 1e38f;
-    glm::vec3 tmin_n;
-    glm::vec3 tmax_n;
+    glm::vec3 tmin_n(0.0f);
+    glm::vec3 tmax_n(0.0f);
     for (int xyz = 0; xyz < 3; ++xyz)
     {
         float qdxyz = q.direction[xyz];
@@ -24,7 +26,7 @@ __host__ __device__ float boxIntersectionTest(
             float t2 = (+0.5f - q.origin[xyz]) / qdxyz;
             float ta = glm::min(t1, t2);
             float tb = glm::max(t1, t2);
-            glm::vec3 n;
+            glm::vec3 n(0.0f);
             n[xyz] = t2 < t1 ? +1 : -1;
             if (ta > 0 && ta > tmin)
             {
@@ -110,4 +112,106 @@ __host__ __device__ float sphereIntersectionTest(
     }
 
     return glm::length(r.origin - intersectionPoint);
+}
+
+__host__ __device__ float rectangleIntersectionTest(
+    const Geom& rectangle,
+    Ray ray,
+    glm::vec3& intersectionPoint,
+    glm::vec3& normal,
+    bool& outside)
+{
+    glm::vec3 localOrigin = multiplyMV(
+        rectangle.inverseTransform,
+        glm::vec4(ray.origin, 1.0f));
+
+    glm::vec3 localDirection = multiplyMV(
+        rectangle.inverseTransform,
+        glm::vec4(ray.direction, 0.0f));
+
+    const glm::vec3 localNormal(0.0f, 0.0f, 1.0f);
+
+    float denominator = glm::dot(localNormal, localDirection);
+    if (denominator >= -EPSILON)
+    {
+        return -1.0f;
+    }
+
+    float t = -localOrigin.z / localDirection.z;
+    if (t <= 0.0f)
+    {
+        return -1.0f;
+    }
+
+    glm::vec3 localPoint = localOrigin + t * localDirection;
+
+    if (fabsf(localPoint.x) > 0.5f || fabsf(localPoint.y) > 0.5f)
+    {
+        return -1.0f;
+    }
+
+    intersectionPoint = multiplyMV(
+        rectangle.transform,
+        glm::vec4(localPoint, 1.0f));
+
+    normal = glm::normalize(multiplyMV(
+        rectangle.invTranspose,
+        glm::vec4(localNormal, 0.0f)));
+
+    outside = true;
+
+    return glm::length(intersectionPoint - ray.origin);
+}
+
+__host__ __device__ float sceneIntersectionTest(
+    const Geom* geoms,
+    int geomsSize,
+    Ray r,
+    glm::vec3& intersectionPoint,
+    glm::vec3& normal,
+    int& geomId,
+    bool& outside)
+{
+    float closestT = FLT_MAX;
+    geomId = -1;
+    outside = true;
+
+    for (int i = 0; i < geomsSize; ++i)
+    {
+        Geom geom = geoms[i];
+
+        float t = -1.0f;
+        glm::vec3 testPoint;
+        glm::vec3 testNormal;
+        bool testOutside = true;
+
+        switch (geom.type)
+        {
+        case CUBE:
+            t = boxIntersectionTest(geom, r, testPoint, testNormal, testOutside);
+            break;
+
+        case SPHERE:
+            t = sphereIntersectionTest(geom, r, testPoint, testNormal, testOutside);
+            break;
+
+        case RECTANGLE:
+            t = rectangleIntersectionTest(geom, r, testPoint, testNormal, testOutside);
+            break;
+
+        default:
+            break;
+        }
+
+        if (t > 0.0001f && t < closestT)
+        {
+            closestT = t;
+            geomId = i;
+            intersectionPoint = testPoint;
+            normal = testNormal;
+            outside = testOutside;
+        }
+    }
+
+    return geomId >= 0 ? closestT : -1.0f;
 }

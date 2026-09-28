@@ -1,4 +1,5 @@
 #include "interactions.h"
+#include "intersections.h"
 
 #include "utilities.h"
 
@@ -27,9 +28,9 @@ __host__ __device__ BSDFSample invalidBSDFSample()
 {
     BSDFSample sample{};
     sample.direction = glm::vec3(0.0f);
-    sample.f = glm::vec3(0.0f);
+    sample.bsdfValue = glm::vec3(0.0f);
     sample.pdf = 0.0f;
-    sample.isSpecular = false;
+    sample.isDelta = false;
     sample.valid = false;
     return sample;
 }
@@ -335,18 +336,18 @@ __host__ __device__ BSDFSample sampleBSDF(
     case MATERIAL_DIFFUSE:
     {
         sample.direction = calculateRandomDirectionInHemisphere(faceNormal, rng);
-        sample.f = evaluateBSDF(m, faceNormal, wo, sample.direction);
+        sample.bsdfValue = evaluateBSDF(m, faceNormal, wo, sample.direction);
         sample.pdf = bsdfPdf(m, faceNormal, wo, sample.direction);
-        sample.isSpecular = false;
+        sample.isDelta = false;
         break;
     }
 
     case MATERIAL_MIRROR:
     {
         sample.direction = glm::normalize(glm::reflect(incident, faceNormal));
-        sample.f = m.color;
+        sample.bsdfValue = m.color;
         sample.pdf = 1.0f;
-        sample.isSpecular = true;
+        sample.isDelta = true;
         break;
     }
 
@@ -377,8 +378,8 @@ __host__ __device__ BSDFSample sampleBSDF(
             sample.pdf = 1.0f - reflectProbability;
         }
 
-        sample.f = m.color * sample.pdf;
-        sample.isSpecular = true;
+        sample.bsdfValue = m.color * sample.pdf;
+        sample.isDelta = true;
         break;
     }
 
@@ -398,9 +399,9 @@ __host__ __device__ BSDFSample sampleBSDF(
             return sample;
         }
 
-        sample.f = evaluateBSDF(m, faceNormal, wo, sample.direction);
+        sample.bsdfValue = evaluateBSDF(m, faceNormal, wo, sample.direction);
         sample.pdf = bsdfPdf(m, faceNormal, wo, sample.direction);
-        sample.isSpecular = false;
+        sample.isDelta = false;
         break;
     }
 
@@ -426,20 +427,19 @@ __host__ __device__ void scatterRay(
     BSDFSample sample = sampleBSDF(m, normal, outside, wo, rng);
     if (!sample.valid)
     {
-        pathSegment.color = glm::vec3(0.0f);
+        pathSegment.throughput = glm::vec3(0.0f);
         pathSegment.remainingBounces = 0;
         return;
     }
 
     glm::vec3 faceNormal = faceForwardNormal(normal, wo);
 
-    float cosTheta = sample.isSpecular ? 1.0f : fabsf(glm::dot(faceNormal, sample.direction));
+    float cosTheta = sample.isDelta ? 1.0f : fabsf(glm::dot(faceNormal, sample.direction));
 
-    pathSegment.color *= sample.f * cosTheta / sample.pdf;
-
-    float offsetSign = glm::dot(sample.direction, faceNormal) >= 0.0f ? 1.0f : -1.0f;
-
-    pathSegment.ray.origin = intersect + offsetSign * 0.0001f * faceNormal;
-    pathSegment.ray.direction = sample.direction;
+    pathSegment.throughput *= sample.bsdfValue * cosTheta / sample.pdf;
+    pathSegment.previousPosition = intersect;
+    pathSegment.previousBsdfPdf = sample.pdf;
+    pathSegment.previousBounceWasDelta = sample.isDelta;
+    pathSegment.ray = spawnRay(intersect, sample.direction);
     pathSegment.remainingBounces--;
 }
