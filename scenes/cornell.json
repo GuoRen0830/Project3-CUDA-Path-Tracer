@@ -36,11 +36,17 @@
             "TYPE": "Dielectric",
             "RGB": [1.0, 1.0, 1.0],
             "IOR": 1.5
+        },
+        "microfacet_gold":
+        {
+            "TYPE": "Microfacet",
+            "RGB": [1.0, 0.71, 0.29],
+            "ROUGHNESS": 0.2
         }
     },
     "Camera":
     {
-        "RES":[800,800],
+        "RES":[800, 800],
         "FOVY":45.0,
         "ITERATIONS":5000,
         "DEPTH":8,
@@ -95,7 +101,7 @@
         },
         {
             "TYPE":"sphere",
-            "MATERIAL":"mirror_white",
+            "MATERIAL":"microfacet_gold",
             "TRANS":[-1.0,4.0,-1.0],
             "ROTAT":[0.0,0.0,0.0],
             "SCALE":[3.0,3.0,3.0]

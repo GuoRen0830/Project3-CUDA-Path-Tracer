@@ -68,15 +68,15 @@ void Scene::loadFromJSON(const std::string& jsonName)
             newMaterial.type = MATERIAL_DIELECTRIC;
             const auto& col = p["RGB"];
             newMaterial.color = glm::vec3(col[0], col[1], col[2]);
-
-            if (p.contains("IOR"))
-            {
-                newMaterial.indexOfRefraction = p["IOR"];
-            }
-            else
-            {
-                newMaterial.indexOfRefraction = 1.5f;
-            }
+            newMaterial.indexOfRefraction = p.contains("IOR") ? p["IOR"] : 1.5f;
+        }
+        else if (p["TYPE"] == "Microfacet")
+        {
+            newMaterial.type = MATERIAL_MICROFACET;
+            const auto& col = p["RGB"];
+            newMaterial.color = glm::vec3(col[0], col[1], col[2]);
+            newMaterial.roughness = p.contains("ROUGHNESS") ? p["ROUGHNESS"] : 0.5f;
+            newMaterial.roughness = glm::clamp(newMaterial.roughness, 0.001f, 1.0f);
         }
         MatNameToID[name] = materials.size();
         materials.emplace_back(newMaterial);

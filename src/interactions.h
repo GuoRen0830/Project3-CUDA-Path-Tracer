@@ -6,41 +6,65 @@
 
 #include <thrust/random.h>
 
-// CHECKITOUT
+struct BSDFSample
+{
+    glm::vec3 direction;
+    glm::vec3 f;
+    float pdf;
+    bool isSpecular;
+    bool valid;
+};
+
+__host__ __device__ glm::vec3 faceForwardNormal(glm::vec3 normal, glm::vec3 wo);
+__host__ __device__ float schlickFresnel(float cosTheta, float etaI, float etaT);
+__host__ __device__ BSDFSample invalidBSDFSample();
+__host__ __device__ glm::vec3 localToWorld(glm::vec3 localDirection, glm::vec3 normal);
+
+__host__ __device__ glm::vec3 schlickFresnel(float cosTheta, glm::vec3 f0);
+__host__ __device__ float trowbridgeReitzD(glm::vec3 normal, glm::vec3 halfVector, float roughness);
+__host__ __device__ float trowbridgeReitzLambda(glm::vec3 normal, glm::vec3 direction, float roughness);
+__host__ __device__ float trowbridgeReitzG(glm::vec3 normal, glm::vec3 wo, glm::vec3 wi, float roughness);
+__host__ __device__ glm::vec3 sampleGGXHalfVector(glm::vec3 normal, float roughness, thrust::default_random_engine& rng);
+__host__ __device__ glm::vec3 evaluateMicrofacetReflection(const Material& m, glm::vec3 normal, glm::vec3 wo, glm::vec3 wi);
+__host__ __device__ float microfacetReflectionPdf(const Material& m, glm::vec3 normal, glm::vec3 wo, glm::vec3 wi);
+
 /**
  * Computes a cosine-weighted random direction in a hemisphere.
- * Used for diffuse lighting.
  */
 __host__ __device__ glm::vec3 calculateRandomDirectionInHemisphere(
     glm::vec3 normal, 
     thrust::default_random_engine& rng);
 
-__host__ __device__ float schlickFresnel(float cosTheta, float etaI, float etaT);
+/**
+ * Evaluates the BSDF for a pair of world-space directions.
+*/
+__host__ __device__ glm::vec3 evaluateBSDF(
+    const Material& m,
+    glm::vec3 normal,
+    glm::vec3 wo,
+    glm::vec3 wi);
 
 /**
- * Scatter a ray with some probabilities according to the material properties.
- * For example, a diffuse surface scatters in a cosine-weighted hemisphere.
- * A perfect specular surface scatters in the reflected ray direction.
- * In order to apply multiple effects to one surface, probabilistically choose
- * between them.
- *
- * The visual effect you want is to straight-up add the diffuse and specular
- * components. You can do this in a few ways. This logic also applies to
- * combining other types of materias (such as refractive).
- *
- * - Always take an even (50/50) split between a each effect (a diffuse bounce
- *   and a specular bounce), but divide the resulting color of either branch
- *   by its probability (0.5), to counteract the chance (0.5) of the branch
- *   being taken.
- *   - This way is inefficient, but serves as a good starting point - it
- *     converges slowly, especially for pure-diffuse or pure-specular.
- * - Pick the split based on the intensity of each material color, and divide
- *   branch result by that branch's probability (whatever probability you use).
- *
- * This method applies its changes to the Ray parameter `ray` in place.
- * It also modifies the color `color` of the ray in place.
- *
- * You may need to change the parameter list for your purposes!
+ * Returns the BSDF sampling PDF for a world-space direction.
+*/
+__host__ __device__ float bsdfPdf(
+    const Material& m,
+    glm::vec3 normal,
+    glm::vec3 wo,
+    glm::vec3 wi);
+
+/**
+ * Samples the material BSDF
+*/
+__host__ __device__ BSDFSample sampleBSDF(
+    const Material& m,
+    glm::vec3 normal,
+    bool outside,
+    glm::vec3 wo,
+    thrust::default_random_engine& rng);
+
+/**
+ * Samples the BSDF and updates the path in place
  */
 __host__ __device__ void scatterRay(
     PathSegment& pathSegment,

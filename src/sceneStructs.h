@@ -39,7 +39,8 @@ enum MaterialType
     MATERIAL_MIRROR = 1,
     MATERIAL_DIELECTRIC = 2,
     MATERIAL_EMITTING = 3,
-    MATERIAL_TYPE_COUNT = 4
+    MATERIAL_MICROFACET = 4,
+    MATERIAL_TYPE_COUNT = 5
 };
 
 struct Material
@@ -57,6 +58,7 @@ struct Material
     float hasReflective;
     float hasRefractive;
     float indexOfRefraction;
+    float roughness;
     float emittance;
 };
 

@@ -1,0 +1,104 @@
+{
+    "Materials":
+    {
+        "light_small":
+        {
+            "TYPE": "Emitting",
+            "RGB": [1.0, 1.0, 1.0],
+            "EMITTANCE": 96.0
+        },
+        "light_medium_large":
+        {
+            "TYPE": "Emitting",
+            "RGB": [1.0, 1.0, 1.0],
+            "EMITTANCE": 48.0
+        },
+        "glossy_smooth":
+        {
+            "TYPE": "Microfacet",
+            "RGB": [0.375, 1.0, 0.425],
+            "ROUGHNESS": 0.05
+        },
+        "glossy_medium":
+        {
+            "TYPE": "Microfacet",
+            "RGB": [1.0, 1.0, 0.35],
+            "ROUGHNESS": 0.1
+        },
+        "glossy_rough":
+        {
+            "TYPE": "Microfacet",
+            "RGB": [1.0, 0.395, 0.375],
+            "ROUGHNESS": 0.25
+        },
+        "glossy_super":
+        {
+            "TYPE": "Microfacet",
+            "RGB": [0.39, 0.33, 0.95],
+            "ROUGHNESS": 0.01
+        }
+    },
+    "Camera":
+    {
+        "RES": [800, 800],
+        "FOVY": 8.0,
+        "ITERATIONS": 5000,
+        "DEPTH": 10,
+        "FILE": "veach",
+        "EYE": [0.0, 48.0, 220.0],
+        "LOOKAT": [0.0, -12.0, 20.0],
+        "UP": [0.0, 1.0, 0.0]
+    },
+    "Objects":
+    [
+        {
+            "TYPE": "cube",
+            "MATERIAL": "glossy_rough",
+            "TRANS": [0.0, -31.2, 28.4],
+            "ROTAT": [-78.0, 0.0, 0.0],
+            "SCALE": [80.0, 8.0, 0.01]
+        },
+        {
+            "TYPE": "cube",
+            "MATERIAL": "glossy_medium",
+            "TRANS": [0.0, -28.672, 17.848],
+            "ROTAT": [-73.0, 0.0, 0.0],
+            "SCALE": [80.0, 8.0, 0.01]
+        },
+        {
+            "TYPE": "cube",
+            "MATERIAL": "glossy_smooth",
+            "TRANS": [0.0, -24.496, 7.368],
+            "ROTAT": [-63.0, 0.0, 0.0],
+            "SCALE": [80.0, 8.0, 0.01]
+        },
+        {
+            "TYPE": "cube",
+            "MATERIAL": "glossy_super",
+            "TRANS": [0.0, -19.16, -1.08],
+            "ROTAT": [-51.5, 0.0, 0.0],
+            "SCALE": [80.0, 8.0, 0.01]
+        },
+        {
+            "TYPE": "sphere",
+            "MATERIAL": "light_small",
+            "TRANS": [-28.0, 0.0, 0.0],
+            "ROTAT": [0.0, 0.0, 0.0],
+            "SCALE": [2.0, 2.0, 2.0]
+        },
+        {
+            "TYPE": "sphere",
+            "MATERIAL": "light_medium_large",
+            "TRANS": [0.0, 0.0, 0.0],
+            "ROTAT": [0.0, 0.0, 0.0],
+            "SCALE": [8.0, 8.0, 8.0]
+        },
+        {
+            "TYPE": "sphere",
+            "MATERIAL": "light_medium_large",
+            "TRANS": [28.0, 0.0, 0.0],
+            "ROTAT": [0.0, 0.0, 0.0],
+            "SCALE": [16.0, 16.0, 16.0]
+        }
+    ]
+}
