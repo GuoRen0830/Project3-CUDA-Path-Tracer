@@ -1,0 +1,319 @@
+{
+  "Materials": {
+    "glossyDark": {
+      "TYPE": "Microfacet",
+      "RGB": [
+        0.25,
+        0.24,
+        0.28
+      ],
+      "ROUGHNESS": 0.08
+    },
+    "domino1_mirror": {
+      "TYPE": "Microfacet",
+      "RGB": [
+        0.95,
+        0.55,
+        0.5
+      ],
+      "ROUGHNESS": 0.01
+    },
+    "domino2_glossy": {
+      "TYPE": "Microfacet",
+      "RGB": [
+        0.95,
+        0.7,
+        0.35
+      ],
+      "ROUGHNESS": 0.05
+    },
+    "domino3_semigloss": {
+      "TYPE": "Microfacet",
+      "RGB": [
+        0.85,
+        0.85,
+        0.35
+      ],
+      "ROUGHNESS": 0.1
+    },
+    "domino4_satin": {
+      "TYPE": "Microfacet",
+      "RGB": [
+        0.4,
+        0.8,
+        0.4
+      ],
+      "ROUGHNESS": 0.2
+    },
+    "domino5_rough": {
+      "TYPE": "Microfacet",
+      "RGB": [
+        0.35,
+        0.55,
+        0.85
+      ],
+      "ROUGHNESS": 0.4
+    },
+    "domino6_matte": {
+      "TYPE": "Diffuse",
+      "RGB": [
+        0.35,
+        0.2,
+        0.65
+      ]
+    },
+    "chromeMirror": {
+      "TYPE": "Mirror",
+      "RGB": [
+        0.85,
+        0.85,
+        0.88
+      ]
+    },
+    "area_light_1": {
+      "TYPE": "Emitting",
+      "RGB": [
+        30,
+        26,
+        20
+      ],
+      "EMITTANCE": 1
+    },
+    "area_light_2": {
+      "TYPE": "Emitting",
+      "RGB": [
+        10,
+        14,
+        22
+      ],
+      "EMITTANCE": 0.5
+    }
+  },
+  "Camera": {
+    "RES": [
+      1680,
+      960
+    ],
+    "FOVY": 18,
+    "ITERATIONS": 5000,
+    "DEPTH": 12,
+    "FILE": "My_dominoes_original_layout",
+    "EYE": [
+      23,
+      -11,
+      18
+    ],
+    "LOOKAT": [
+      1,
+      -0.5,
+      3
+    ],
+    "UP": [
+      0,
+      1,
+      0
+    ]
+  },
+  "Objects": [
+    {
+      "NAME": "Glossy Floor",
+      "TYPE": "rectangle",
+      "MATERIAL": "glossyDark",
+      "TRANS": [
+        0,
+        -2,
+        0
+      ],
+      "ROTAT": [
+        -90,
+        0,
+        0
+      ],
+      "SCALE": [
+        60,
+        60,
+        1
+      ]
+    },
+    {
+      "NAME": "Domino 1 Standing",
+      "TYPE": "cube",
+      "MATERIAL": "domino1_mirror",
+      "TRANS": [
+        -8,
+        0.5,
+        4
+      ],
+      "ROTAT": [
+        0,
+        10,
+        0
+      ],
+      "SCALE": [
+        0.5,
+        5,
+        2.5
+      ]
+    },
+    {
+      "NAME": "Domino 2 Tilting",
+      "TYPE": "cube",
+      "MATERIAL": "domino2_glossy",
+      "TRANS": [
+        -5,
+        0.5,
+        4
+      ],
+      "ROTAT": [
+        0,
+        8,
+        10
+      ],
+      "SCALE": [
+        0.5,
+        5,
+        2.5
+      ]
+    },
+    {
+      "NAME": "Domino 3 More Tilt",
+      "TYPE": "cube",
+      "MATERIAL": "domino3_semigloss",
+      "TRANS": [
+        -2,
+        0,
+        4
+      ],
+      "ROTAT": [
+        0,
+        5,
+        25
+      ],
+      "SCALE": [
+        0.5,
+        5,
+        2.5
+      ]
+    },
+    {
+      "NAME": "Domino 4 Falling",
+      "TYPE": "cube",
+      "MATERIAL": "domino4_satin",
+      "TRANS": [
+        1,
+        -0.5,
+        4
+      ],
+      "ROTAT": [
+        0,
+        2,
+        45
+      ],
+      "SCALE": [
+        0.5,
+        5,
+        2.5
+      ]
+    },
+    {
+      "NAME": "Domino 5 Almost Down",
+      "TYPE": "cube",
+      "MATERIAL": "domino5_rough",
+      "TRANS": [
+        4,
+        -1,
+        4
+      ],
+      "ROTAT": [
+        0,
+        -2,
+        65
+      ],
+      "SCALE": [
+        0.5,
+        5,
+        2.5
+      ]
+    },
+    {
+      "NAME": "Domino 6 Flat",
+      "TYPE": "cube",
+      "MATERIAL": "domino6_matte",
+      "TRANS": [
+        7.5,
+        -1.5,
+        4
+      ],
+      "ROTAT": [
+        0,
+        -5,
+        85
+      ],
+      "SCALE": [
+        0.5,
+        5,
+        2.5
+      ]
+    },
+    {
+      "NAME": "Mirror Witness Ball",
+      "TYPE": "sphere",
+      "MATERIAL": "chromeMirror",
+      "TRANS": [
+        0,
+        0,
+        -2
+      ],
+      "ROTAT": [
+        0,
+        0,
+        0
+      ],
+      "SCALE": [
+        8,
+        8,
+        8
+      ]
+    },
+    {
+      "NAME": "Warm Overhead",
+      "TYPE": "rectangle",
+      "MATERIAL": "area_light_1",
+      "TRANS": [
+        -2,
+        28,
+        2
+      ],
+      "ROTAT": [
+        90,
+        0,
+        0
+      ],
+      "SCALE": [
+        16,
+        16,
+        1
+      ]
+    },
+    {
+      "NAME": "Rim Light Behind",
+      "TYPE": "rectangle",
+      "MATERIAL": "area_light_2",
+      "TRANS": [
+        4,
+        6,
+        12
+      ],
+      "ROTAT": [
+        10,
+        180,
+        0
+      ],
+      "SCALE": [
+        12,
+        6,
+        1
+      ]
+    }
+  ]
+}
