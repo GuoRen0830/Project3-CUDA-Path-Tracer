@@ -70,12 +70,17 @@ __global__ void sendImageToPBO(uchar4* pbo, glm::ivec2 resolution, int iter, glm
     if (x < resolution.x && y < resolution.y)
     {
         int index = x + (y * resolution.x);
-        glm::vec3 pix = image[index];
+        
+        glm::vec3 pix = image[index] / static_cast<float>(iter);
+        pix = glm::max(pix, glm::vec3(0.0f));
 
-        glm::ivec3 color;
-        color.x = glm::clamp((int)(pix.x / iter * 255.0), 0, 255);
-        color.y = glm::clamp((int)(pix.y / iter * 255.0), 0, 255);
-        color.z = glm::clamp((int)(pix.z / iter * 255.0), 0, 255);
+        // Reinhard
+        pix = pix / (glm::vec3(1.0f) + pix);
+
+        // Gamma
+        pix = glm::pow(pix, glm::vec3(1.0f / 2.2f));
+
+        glm::ivec3 color(glm::clamp(pix, glm::vec3(0.0f), glm::vec3(1.0f)) * 255.0f + glm::vec3(0.5f));
 
         // Each thread writes one pixel location in the texture (textel)
         pbo[index].w = 0;
