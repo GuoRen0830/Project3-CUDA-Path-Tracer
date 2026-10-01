@@ -96,6 +96,20 @@ __host__ __device__ float rectangleIntersectionTest(
     bool& outside);
 
 /**
+ * Two-sided ray-triangle intersection
+ */
+__host__ __device__ bool triangleIntersectionTest(
+    const Ray& ray,
+    const glm::vec3& p0,
+    const glm::vec3& p1,
+    const glm::vec3& p2,
+    float tMin,
+    float tMax,
+    float& t,
+    float& u,
+    float& v);
+
+/**
  * Find the closest scene intersection
  */
 __host__ __device__ float sceneIntersectionTest(

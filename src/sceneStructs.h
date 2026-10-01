@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <cfloat>
 
 #define BACKGROUND_COLOR (glm::vec3(0.0f))
 
@@ -20,6 +21,24 @@ struct Ray
 {
     glm::vec3 origin;
     glm::vec3 direction;
+};
+
+struct TriangleIndex
+{
+    int i0;
+    int i1;
+    int i2;
+};
+
+struct Hit
+{
+    float t = FLT_MAX;
+
+    int geomId = -1;
+    int primitiveId = -1;
+
+    float u = 0.0f;
+    float v = 0.0f;
 };
 
 struct Geom

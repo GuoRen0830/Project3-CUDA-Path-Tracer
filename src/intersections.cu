@@ -1,6 +1,8 @@
 #include "intersections.h"
 #include "utilities.h"
 #include <cfloat>
+#include <cmath>
+#include <glm/geometric.hpp>
 
 __host__ __device__ float boxIntersectionTest(
     Geom box,
@@ -161,6 +163,62 @@ __host__ __device__ float rectangleIntersectionTest(
     outside = true;
 
     return glm::length(intersectionPoint - ray.origin);
+}
+
+__host__ __device__ bool triangleIntersectionTest(
+    const Ray& ray,
+    const glm::vec3& p0,
+    const glm::vec3& p1,
+    const glm::vec3& p2,
+    float tMin,
+    float tMax,
+    float& t,
+    float& u,
+    float& v)
+{
+    const glm::vec3 edge1 = p1 - p0;
+    const glm::vec3 edge2 = p2 - p0;
+
+    const glm::vec3 pvec = glm::cross(ray.direction, edge2);
+    const float det = glm::dot(edge1, pvec);
+
+    constexpr float determinantEpsilon = 1e-8f;
+
+    if (fabsf(det) <= determinantEpsilon)
+    {
+        return false;
+    }
+
+    const float invDet = 1.0f / det;
+
+    // Compute the weight of p1
+    const glm::vec3 tvec = ray.origin - p0;
+    const float candidateU = glm::dot(tvec, pvec) * invDet;
+    if (candidateU < 0.0f || candidateU > 1.0f)
+    {
+        return false;
+    }
+
+    // Compute the weight of p2
+    const glm::vec3 qvec = glm::cross(tvec, edge1);
+    const float candidateV = glm::dot(ray.direction, qvec) * invDet;
+    if (candidateV < 0.0f || candidateU + candidateV > 1.0f)
+    {
+        return false;
+    }
+
+    // Compute the ray parameter
+    const float candidateT = glm::dot(edge2, qvec) * invDet;
+    if (!(candidateT > tMin && candidateT < tMax))
+    {
+        return false;
+    }
+
+    t = candidateT;
+    u = candidateU;
+    v = candidateV;
+
+    return true;
 }
 
 __host__ __device__ float sceneIntersectionTest(
